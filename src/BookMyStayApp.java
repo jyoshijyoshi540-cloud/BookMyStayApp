@@ -61,6 +61,3 @@ public class BookMyStayApp {
         reportService.generateReport(history);
     }
 }
-
-
-
