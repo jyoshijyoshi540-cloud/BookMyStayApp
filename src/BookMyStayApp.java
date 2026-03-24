@@ -1,46 +1,64 @@
 import java.util.*;
 
-class Reservation {
-    private String guestName;
-    private String roomType;
+class RoomInventory {
+    private Map<String, Integer> rooms;
 
-    public Reservation(String guestName, String roomType) {
-        this.guestName = guestName;
-        this.roomType = roomType;
+    public RoomInventory() {
+        rooms = new HashMap<>();
+        rooms.put("Single", 5);
+        rooms.put("Double", 5);
+        rooms.put("Suite", 5);
     }
 
-    public String getGuestName() {
-        return guestName;
+    public void incrementRoom(String roomType) {
+        rooms.put(roomType, rooms.get(roomType) + 1);
     }
 
-    public String getRoomType() {
-        return roomType;
-    }
-}
-
-class BookingHistory {
-    private List<Reservation> confirmedReservations;
-
-    public BookingHistory() {
-        confirmedReservations = new ArrayList<>();
-    }
-
-    public void addReservation(Reservation reservation) {
-        confirmedReservations.add(reservation);
-    }
-
-    public List<Reservation> getConfirmedReservations() {
-        return confirmedReservations;
+    public int getAvailability(String roomType) {
+        return rooms.get(roomType);
     }
 }
 
-class BookingReportService {
+class CancellationService {
 
-    public void generateReport(BookingHistory history) {
-        System.out.println("\nBooking History Report");
+    private Stack<String> releasedRoomIds;
+    private Map<String, String> reservationRoomTypeMap;
 
-        for (Reservation r : history.getConfirmedReservations()) {
-            System.out.println("Guest: " + r.getGuestName() + ", Room Type: " + r.getRoomType());
+    public CancellationService() {
+        releasedRoomIds = new Stack<>();
+        reservationRoomTypeMap = new HashMap<>();
+    }
+
+    public void registerBooking(String reservationId, String roomType) {
+        reservationRoomTypeMap.put(reservationId, roomType);
+    }
+
+    public void cancelBooking(String reservationId, RoomInventory inventory) {
+
+        if (!reservationRoomTypeMap.containsKey(reservationId)) {
+            System.out.println("Invalid reservation ID.");
+            return;
+        }
+
+        String roomType = reservationRoomTypeMap.get(reservationId);
+
+        inventory.incrementRoom(roomType);
+
+        releasedRoomIds.push(reservationId);
+
+        reservationRoomTypeMap.remove(reservationId);
+
+        System.out.println("Booking cancelled successfully. Inventory restored for room type: " + roomType);
+    }
+
+    public void showRollbackHistory() {
+
+        System.out.println("\nRollback History (Most Recent First):");
+
+        Stack<String> temp = (Stack<String>) releasedRoomIds.clone();
+
+        while (!temp.isEmpty()) {
+            System.out.println("Released Reservation ID: " + temp.pop());
         }
     }
 }
@@ -49,15 +67,17 @@ public class BookMyStayApp {
 
     public static void main(String[] args) {
 
-        System.out.println("Booking History and Reporting");
+        System.out.println("Booking Cancellation");
 
-        BookingHistory history = new BookingHistory();
+        RoomInventory inventory = new RoomInventory();
+        CancellationService service = new CancellationService();
 
-        history.addReservation(new Reservation("Abhi", "Single"));
-        history.addReservation(new Reservation("Subha", "Double"));
-        history.addReservation(new Reservation("Vanmathi", "Suite"));
+        service.registerBooking("Single-1", "Single");
 
-        BookingReportService reportService = new BookingReportService();
-        reportService.generateReport(history);
+        service.cancelBooking("Single-1", inventory);
+
+        service.showRollbackHistory();
+
+        System.out.println("\nUpdated Single Room Availability: " + inventory.getAvailability("Single"));
     }
 }
